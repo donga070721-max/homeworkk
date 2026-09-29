@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>의학용어 조립 & 꿀잼 암기왕 (Medical Term Builder)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Noto Sans KR & Outfit Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mint: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            300: '#5eead4',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                        en: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#cbd5e1 0.8px, transparent 0.8px);
+            background-size: 16px 16px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .chart-paper {
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        .chart-paper::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #0d9488, #2dd4bf, #f59e0b);
+            border-top-left-radius: 1rem;
+            border-top-right-radius: 1rem;
+        }
+
+        .slot-box {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 90px;
+        }
+
+        .slot-box.drag-over {
+            border-color: #0d9488;
+            background-color: #f0fdfa;
+            transform: scale(1.03);
+        }
+
+        .block-card {
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+        }
+
+        .block-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(0,0,0,0.08);
+        }
+
+        .block-card:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes pulseSuccess {
+            0% { transform: scale(0.97); opacity: 0.8; }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-success {
+            animation: pulseSuccess 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Flashcard Flip Effect */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col items-center justify-start p-2 sm:p-4 md:p-6">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col min-h-[92vh]">
+        
+        <!-- Header Bar -->
+        <header class="bg-gradient-to-r from-mint-800 via-mint-700 to-teal-800 text-white p-4 sm:p-5 flex flex-wrap justify-between items-center gap-3 shadow-md relative">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 sm:w-12 sm:h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 text-white shadow-inner text-2xl">
+                    🩺
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="userLevelBadge" class="bg-amber-400 text-amber-950 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                            Lv.1 의대 새내기
+                        </span>
+                        <span class="text-xs text-mint-200 hidden sm:inline">XP: <span id="userXP" class="font-bold text-white">0</span></span>
+                    </div>
+                    <h1 class="text-lg sm:text-2xl font-extrabold font-en tracking-tight">의학용어 꿀잼 조립실</h1>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="flex bg-mint-950/40 p-1 rounded-xl border border-white/10 text-xs sm:text-sm font-medium w-full sm:w-auto justify-center gap-1">
+                <button id="tabBuilder" onclick="switchMode('builder')" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white text-mint-900 font-bold shadow-sm">
+                    <span>🧩</span><span>용어 조립</span>
+                </button>
+                <button id="tabQuiz" onclick="switchMode('quiz')" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 text-mint-100 hover:text-white">
+                    <span>🏆</span><span>퀴즈 챌린지</span>
+                </button>
+                <button id="tabFlashcards" onclick="switchMode('flashcards')" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 text-mint-100 hover:text-white">
+                    <span>⚡</span><span>스피드 암기장</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Body -->
+        <main class="flex-1 p-3 sm:p-6 bg-slate-50 flex flex-col gap-6">
+
+            <!-- 1. BUILDER MODE -->
+            <div id="builderModeView" class="flex flex-col gap-6">
+                
+                <!-- Assembly Workbench -->
+                <div class="chart-paper rounded-2xl p-4 sm:p-6 text-slate-800">
+                    <div class="flex justify-between items-center pb-3 mb-4 border-b border-slate-200">
+                        <div class="flex items-center gap-2 text-xs font-extrabold text-mint-800 uppercase tracking-wider">
+                            <i class="fa-solid fa-wand-magic-sparkles text-amber-500 text-sm"></i>
+                            <span>연상 블록 조립 워크벤치</span>
+                        </div>
+                        <button onclick="resetSlots()" class="text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 transition border border-slate-200 font-semibold">
+                            <i class="fa-solid fa-arrow-rotate-left"></i>
+                            <span>초기화</span>
+                        </button>
+                    </div>
+
+                    <!-- 3 Slots -->
+                    <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+                        
+                        <!-- Prefix Slot -->
+                        <div id="slot-prefix" 
+                             ondragover="handleDragOver(event)" 
+                             ondragleave="handleDragLeave(event)" 
+                             ondrop="handleDrop(event, 'prefix')"
+                             onclick="clearSlot('prefix')"
+                             class="slot-box border-2 border-dashed border-indigo-300 bg-indigo-50/30 rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 group relative">
+                            <span class="text-[10px] sm:text-xs font-bold text-indigo-500 group-hover:text-indigo-700 mb-1 flex items-center gap-1">
+                                <span>🚀</span> 접두사 (Prefix)
+                            </span>
+                            <div id="slot-prefix-content" class="w-full flex items-center justify-center">
+                                <span class="text-xs text-slate-400 font-light italic">(선택 안함)</span>
+                            </div>
+                        </div>
+
+                        <!-- Root Slot -->
+                        <div id="slot-root" 
+                             ondragover="handleDragOver(event)" 
+                             ondragleave="handleDragLeave(event)" 
+                             ondrop="handleDrop(event, 'root')"
+                             onclick="clearSlot('root')"
+                             class="slot-box border-2 border-dashed border-emerald-300 bg-emerald-50/30 rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center text-center cursor-pointer hover:border-emerald-500 group relative">
+                            <span class="text-[10px] sm:text-xs font-bold text-emerald-600 group-hover:text-emerald-800 mb-1 flex items-center gap-1">
+                                <span>🫀</span> 어근 (Root) <span class="text-rose-500">*필수</span>
+                            </span>
+                            <div id="slot-root-content" class="w-full flex items-center justify-center">
+                                <span class="text-xs text-slate-400 font-light italic">어근 선택</span>
+                            </div>
+                        </div>
+
+                        <!-- Suffix Slot -->
+                        <div id="slot-suffix" 
+                             ondragover="handleDragOver(event)" 
+                             ondragleave="handleDragLeave(event)" 
+                             ondrop="handleDrop(event, 'suffix')"
+                             onclick="clearSlot('suffix')"
+                             class="slot-box border-2 border-dashed border-amber-300 bg-amber-50/30 rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center text-center cursor-pointer hover:border-amber-500 group relative">
+                            <span class="text-[10px] sm:text-xs font-bold text-amber-600 group-hover:text-amber-800 mb-1 flex items-center gap-1">
+                                <span>🔥</span> 접미사 (Suffix) <span class="text-rose-500">*필수</span>
+                            </span>
+                            <div id="slot-suffix-content" class="w-full flex items-center justify-center">
+                                <span class="text-xs text-slate-400 font-light italic">접미사 선택</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Formula Preview -->
+                    <div class="bg-slate-100 rounded-xl p-2 text-center text-xs font-mono mb-4 text-slate-600 flex items-center justify-center gap-2">
+                        <span class="text-slate-400 font-sans">조립식:</span>
+                        <span id="formulaText" class="font-bold text-slate-800">[ 접두사 ] + [ 어근/o ] + [ 접미사 ]</span>
+                    </div>
+
+                    <!-- Result Panel -->
+                    <div id="resultPanel" class="rounded-2xl p-5 border transition-all duration-300 bg-white border-slate-200">
+                        <div class="text-center py-6 text-slate-400">
+                            <p class="text-3xl mb-2">💡</p>
+                            <p class="text-sm font-bold text-slate-600">아래의 레고 블록들을 터치해서 단어를 조립해 보세요!</p>
+                            <p class="text-xs text-slate-400 mt-1">예: 🍔위(gastr/o) + 🔥염증(-itis) = 위에 불났다! (gastritis)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Word Block Bank -->
+                <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-100">
+                        <h2 class="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                            <span>🧩</span>
+                            <span>연상 암기 부품 보관함</span>
+                        </h2>
+                        <span class="text-xs text-mint-700 bg-mint-50 px-2.5 py-1 rounded-full font-bold">
+                            클릭하여 바로 착탄!
+                        </span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Prefixes -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xs font-extrabold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-full">
+                                    🚀 접두사 (위치, 속도, 상태)
+                                </span>
+                            </div>
+                            <div id="prefixPalette" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <!-- Roots -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xs font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                                    🫀 어근 (신체 부위 및 장기)
+                                </span>
+                            </div>
+                            <div id="rootPalette" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <!-- Suffixes -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xs font-extrabold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                                    🔥 접미사 (질병, 증상, 수술)
+                                </span>
+                            </div>
+                            <div id="suffixPalette" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 2. QUIZ MODE -->
+            <div id="quizModeView" class="hidden flex-col gap-6">
+                
+                <div class="chart-paper rounded-2xl p-4 sm:p-6">
+                    <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-amber-400 text-amber-950 text-xs font-black px-3 py-1 rounded-full shadow-sm">
+                                🏆 의학 서바이벌 퀴즈
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs font-extrabold">
+                            <div class="text-slate-600">누적 점수: <span id="quizScore" class="text-mint-600 text-lg font-en">0</span>점</div>
+                            <div class="text-slate-600">연속 정답: <span id="quizStreak" class="text-amber-500 text-lg font-en">0</span>🔥</div>
+                        </div>
+                    </div>
+
+                    <!-- Target Question -->
+                    <div id="quizQuestionBox" class="bg-gradient-to-br from-mint-500 to-teal-700 text-white rounded-2xl p-6 mb-6 text-center shadow-lg relative overflow-hidden">
+                        <div class="absolute -right-6 -bottom-6 text-8xl opacity-10 font-bold select-none">Q</div>
+                        <span class="text-xs font-extrabold text-mint-100 uppercase tracking-widest block mb-1">다음 의학적 뜻을 만드는 블록을 조합하세요!</span>
+                        <div id="targetMeaning" class="text-2xl sm:text-3xl font-black my-2">
+                            "위의 염증 (위염)"
+                        </div>
+                        <div id="targetMnemonicHint" class="inline-block bg-black/20 text-mint-100 text-xs px-3 py-1 rounded-full backdrop-blur-sm mt-1">
+                            💡 힌트 연상: 🍔위 + 🔥염증
+                        </div>
+                    </div>
+
+                    <!-- Quiz Slots -->
+                    <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+                        <div id="quiz-slot-prefix" onclick="clearQuizSlot('prefix')" class="slot-box border-2 border-dashed border-indigo-300 bg-indigo-50/40 rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500">
+                            <span class="text-[10px] font-bold text-indigo-500 mb-1">접두사</span>
+                            <div id="quiz-slot-prefix-content" class="text-xs font-bold text-slate-700">(선택 안함)</div>
+                        </div>
+                        <div id="quiz-slot-root" onclick="clearQuizSlot('root')" class="slot-box border-2 border-dashed border-emerald-300 bg-emerald-50/40 rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500">
+                            <span class="text-[10px] font-bold text-emerald-600 mb-1">어근 *</span>
+                            <div id="quiz-slot-root-content" class="text-xs font-bold text-slate-700">어근 선택</div>
+                        </div>
+                        <div id="quiz-slot-suffix" onclick="clearQuizSlot('suffix')" class="slot-box border-2 border-dashed border-amber-300 bg-amber-50/40 rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center cursor-pointer hover:border-amber-500">
+                            <span class="text-[10px] font-bold text-amber-600 mb-1">접미사 *</span>
+                            <div id="quiz-slot-suffix-content" class="text-xs font-bold text-slate-700">접미사 선택</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div class="flex gap-3 items-center">
+                        <button onclick="submitQuizAnswer()" class="flex-1 bg-gradient-to-r from-mint-600 to-teal-600 hover:from-mint-700 hover:to-teal-700 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-base active:scale-95">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>정답 제출하기</span>
+                        </button>
+                        <button onclick="skipQuizQuestion()" class="px-4 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs transition">
+                            패스 ⏩
+                        </button>
+                    </div>
+
+                    <!-- Feedback -->
+                    <div id="quizFeedback" class="mt-4 hidden p-4 rounded-2xl border text-sm animate-success"></div>
+                </div>
+
+                <!-- Block Selection Pool -->
+                <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200">
+                    <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <span>🎯</span> 선택 가능 블록 보기
+                    </h3>
+                    <div id="quizBlockPool" class="flex flex-wrap gap-2">.</div>
+                </div>
+
+            </div>
+
+            <!-- 3. FLASHCARDS MODE -->
+            <div id="flashcardsModeView" class="hidden flex-col gap-6">
+                <div class="chart-paper rounded-2xl p-6 text-center flex flex-col items-center">
+                    <div class="flex items-center gap-2 text-xs font-extrabold text-mint-800 uppercase tracking-wider mb-2">
+                        <span>⚡</span> 스피드 암기 플래시카드
+                    </div>
+                    <p class="text-xs text-slate-500 mb-6">카드를 터치하면 뒤집혀서 연상 암기 비법을 확인할 수 있어요!</p>
+
+                    <!-- Flashcard Card Container -->
+                    <div id="flashcardElement" onclick="flipFlashcard()" class="w-full max-w-md h-64 perspective-1000 cursor-pointer my-2">
+                        <div id="flashcardInner" class="relative w-full h-full duration-500 transform-style-3d shadow-xl rounded-2xl border-2 border-mint-400 bg-gradient-to-br from-mint-500 to-teal-700 text-white flex flex-col justify-between p-6">
+                            
+                            <!-- Front Side -->
+                            <div class="absolute inset-0 backface-hidden flex flex-col justify-between p-6 text-white rounded-2xl bg-gradient-to-br from-mint-600 via-teal-600 to-mint-800">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full font-bold">의학용어</span>
+                                    <span class="text-xs text-mint-200 font-mono" id="fcIndex">1 / 10</span>
+                                </div>
+                                <div>
+                                    <h2 id="fcTerm" class="text-3xl font-extrabold font-en tracking-tight">gastritis</h2>
+                                    <p id="fcPron" class="text-sm text-mint-200 mt-1 font-en">[가스트라이티스]</p>
+                                </div>
+                                <div class="text-xs text-mint-100/80 font-semibold">
+                                    👆 터치해서 뒤집기 (뜻 & 연상법)
+                                </div>
+                            </div>
+
+                            <!-- Back Side -->
+                            <div class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col justify-between p-6 bg-white text-slate-800 rounded-2xl border-2 border-mint-500">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs bg-mint-100 text-mint-800 px-2.5 py-1 rounded-full font-bold">한국어 뜻 & 연상법</span>
+                                    <span id="fcKor" class="text-lg font-black text-mint-800">위염</span>
+                                </div>
+                                <div class="my-auto py-2">
+                                    <div id="fcMnemonic" class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-900 text-xs font-bold mb-2">
+                                        💡 🍔 위(gastr/o) + 🔥 염증(-itis) = 위에 불났다!
+                                    </div>
+                                    <p id="fcDesc" class="text-xs text-slate-600 leading-relaxed">위 점막에 염증이 발생한 상태</p>
+                                </div>
+                                <div class="text-[11px] text-slate-400 font-medium">
+                                    다시 터치하면 앞면으로 돌아갑니다
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Flashcard Navigation Controls -->
+                    <div class="flex items-center justify-center gap-4 mt-6">
+                        <button onclick="prevFlashcard()" class="w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-lg shadow-sm transition active:scale-90">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button onclick="shuffleFlashcards()" class="px-4 py-2.5 bg-mint-50 hover:bg-mint-100 text-mint-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-shuffle"></i> 카드 카드 섞기
+                        </button>
+                        <button onclick="nextFlashcard()" class="w-12 h-12 rounded-full bg-mint-600 hover:bg-mint-700 text-white flex items-center justify-center text-lg shadow-md transition active:scale-90">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer Bar -->
+        <footer class="bg-slate-100 border-t border-slate-200 p-4 text-xs text-slate-600 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-2">
+                <span class="text-base">💡</span>
+                <span><strong>핵심 결합 법칙:</strong> 접미사가 모음(a, e, i, o, u)으로 시작하면 어근의 <code class="bg-slate-200 px-1.5 py-0.5 rounded text-rose-600 font-mono font-bold">/o</code> 탈락!</span>
+            </div>
+            <button onclick="openReferenceModal()" class="text-mint-700 font-bold hover:underline flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs">
+                📖 전체 암기 도감 보기
+            </button>
+        </footer>
+
+    </div>
+
+    <!-- Reference Dictionary Modal -->
+    <div id="referenceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-4 bg-gradient-to-r from-mint-700 to-teal-800 text-white flex justify-between items-center">
+                <h3 class="font-bold flex items-center gap-2 text-base">
+                    📖 한눈에 보는 연상 의학용어 도감
+                </h3>
+                <button onclick="closeReferenceModal()" class="text-white/80 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-4 bg-slate-50 border-b border-slate-200">
+                <input type="text" id="dictSearchInput" oninput="filterDictionary()" placeholder="용어, 연상 힌트, 한국어 뜻 검색..." class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-mint-500 outline-none shadow-inner">
+            </div>
+            <div id="dictList" class="p-4 overflow-y-auto flex-1 space-y-2.5 text-xs"></div>
+        </div>
+    </div>
+
+    <script>
+        
+        // --- 1. ENHANCED DATASETS WITH EMOJIS & MNEMONICS ---
+
+        const PREFIXES = [
+            { id: 'p_none', text: '(없음)', emoji: '⚪', meaning: '접두사 없음', category: 'none' },
+            { id: 'p_hyper', text: 'hyper-', emoji: '🚀', meaning: '과다, 초과, 고(高)', mnemonic: '하이퍼(Hyper) 에너지! 넘쳐남' },
+            { id: 'p_hypo', text: 'hypo-', emoji: '⚓', meaning: '저하, 부족, 하부', mnemonic: '하마(Hypo)처럼 바닥으로 낮아짐' },
+            { id: 'p_brady', text: 'brady-', emoji: '🐢', meaning: '느림, 서(徐)', mnemonic: '느릿느릿 거북이 브래디' },
+            { id: 'p_tachy', text: 'tachy-', emoji: '⚡', meaning: '빠름, 빈(頻)', mnemonic: '타키온(Tachy) 입자처럼 빨라!' },
+            { id: 'p_endo', text: 'endo-', emoji: '🏠', meaning: '내부, 안쪽', mnemonic: '안(Endo)쪽 방으로 들어옴' },
+            { id: 'p_sub', text: 'sub-', emoji: '🤿', meaning: '아래, 하(下)', mnemonic: '서브마린(Sub) 잠수함처럼 아래' },
+            { id: 'p_dys', text: 'dys-', emoji: '😣', meaning: '장애, 곤란, 통증', mnemonic: '디스(Dys) 당해서 기분 나쁘고 고통스러움' },
+            { id: 'p_a', text: 'a-', emoji: '🚫', meaning: '결여, 무(無)', mnemonic: 'A가 없다! (없음)' }
+        ];
+
+        const ROOTS = [
+            { id: 'r_gastr', combiningForm: 'gastr/o', rootWord: 'gastr', vowel: 'o', emoji: '🍔', meaning: '위(Stomach)', mnemonic: '가스(Gastr) 차는 소화기 위!' },
+            { id: 'r_cardi', combiningForm: 'cardi/o', rootWord: 'cardi', vowel: 'o', emoji: '🫀', meaning: '심장(Heart)', mnemonic: '카디건을 입어 따뜻한 심장' },
+            { id: 'r_hepat', combiningForm: 'hepat/o', rootWord: 'hepat', vowel: 'o', emoji: '🍺', meaning: '간(Liver)', mnemonic: '해장(Hepat)이 필요한 간' },
+            { id: 'r_nephr', combiningForm: 'nephr/o', rootWord: 'nephr', vowel: 'o', emoji: '🫘', meaning: '신장(콩팥)', mnemonic: '콩(Nephr) 모양의 신장' },
+            { id: 'r_oste', combiningForm: 'oste/o', rootWord: 'oste', vowel: 'o', emoji: '🦴', meaning: '뼈(Bone)', mnemonic: '오스테오 튼튼한 뼈' },
+            { id: 'r_derm', combiningForm: 'dermat/o', rootWord: 'dermat', vowel: 'o', emoji: '🧴', meaning: '피부(Skin)', mnemonic: '더마(Dermat) 코스메틱 피부' },
+            { id: 'r_neur', combiningForm: 'neur/o', rootWord: 'neur', vowel: 'o', emoji: '🧠', meaning: '신경(Nerve)', mnemonic: '신경 전달 뉴런(Neuron)' },
+            { id: 'r_arthr', combiningForm: 'arthr/o', rootWord: 'arthr', vowel: 'o', emoji: '🦴', meaning: '관절(Joint)', mnemonic: '아구구(Arthr) 아픈 관절' },
+            { id: 'r_enter', combiningForm: 'enter/o', rootWord: 'enter', vowel: 'o', emoji: '🌀', meaning: '장/소장', mnemonic: '음식이 들어가는(Enter) 장' },
+            { id: 'r_pulmon', combiningForm: 'pulmon/o', rootWord: 'pulmon', vowel: 'o', emoji: '🫁', meaning: '폐(허파)', mnemonic: '풀무질(Pulmon)하는 숨쉬는 폐' }
+        ];
+
+        const SUFFIXES = [
+            { id: 's_itis', text: '-itis', emoji: '🔥', meaning: '염증', startsWithVowel: true, mnemonic: '불타오르는 이티스(itis) 염증' },
+            { id: 's_ectomy', text: '-ectomy', emoji: '✂️', meaning: '절제술, 떼어냄', startsWithVowel: true, mnemonic: '엑스(Ex) 표시하고 싹둑 절제' },
+            { id: 's_logy', text: '-logy', emoji: '📚', meaning: '학문, 과(科)', startsWithVowel: false, mnemonic: '열심히 공부하는 학문' },
+            { id: 's_algia', text: '-algia', emoji: '⚡', meaning: '통증', startsWithVowel: true, mnemonic: '알구구(algia) 아픈 통증' },
+            { id: 's_scopy', text: '-scopy', emoji: '🔍', meaning: '내시경 검사', startsWithVowel: false, mnemonic: '돋보기/카메라 들여다보기' },
+            { id: 's_megaly', text: '-megaly', emoji: '🎈', meaning: '비대, 커짐', startsWithVowel: false, mnemonic: '메가(Mega)급으로 커진 비대' },
+            { id: 's_plasty', text: '-plasty', emoji: '🛠️', meaning: '성형술, 수복', startsWithVowel: false, mnemonic: '플라스틱처럼 예쁘게 수리' },
+            { id: 's_gram', text: '-gram', emoji: '📊', meaning: '기록, 그림', startsWithVowel: false, mnemonic: '인스타그램처럼 기록물' }
+        ];
+
+        // Dictionary with Fun Mnemonics
+        const MEDICAL_DICTIONARY = {
+            "_r_gastr_s_itis": {
+                term: "gastritis", kor: "위염", pronunciation: "[가스트라이티스]",
+                mnemonic: "🍔위(gastr/o) + 🔥염증(-itis) = 위에 불났다!",
+                desc: "위 점막에 염증이 생긴 상태 (-itis가 모음이라 결합모음 /o/ 탈락)"
+            },
+            "_r_gastr_s_ectomy": {
+                term: "gastrectomy", kor: "위절제술", pronunciation: "[가스트렉토미]",
+                mnemonic: "🍔위(gastr/o) + ✂️절제(-ectomy) = 위의 일부를 싹둑!",
+                desc: "위의 전체 또는 일부를 수술적으로 절제하는 치료법."
+            },
+            "_r_gastr_s_logy": {
+                term: "gastrology", kor: "위장학", pronunciation: "[가스트롤로지]",
+                mnemonic: "🍔위(gastr/o) + 📚학문(-logy) = 위장 연구 학문",
+                desc: "위 및 소화기 질환을 연구하는 분야 (결합모음 /o/ 유지)."
+            },
+            "_r_gastr_s_scopy": {
+                term: "gastroscopy", kor: "위내시경", pronunciation: "[가스트로스코피]",
+                mnemonic: "🍔위(gastr/o) + 🔍내시경(-scopy) = 위 속으로 카메라 쏙!",
+                desc: "내시경을 삽입하여 위 내부를 관찰하는 검사."
+            },
+            "_r_cardi_s_itis": {
+                term: "carditis", kor: "심장염", pronunciation: "[카다이티스]",
+                mnemonic: "🫀심장(cardi/o) + 🔥염증(-itis) = 심장에 불난 상태!",
+                desc: "심장 조직에 염증이 발생함."
+            },
+            "p_endo_r_cardi_s_itis": {
+                term: "endocarditis", kor: "심내막염", pronunciation: "[엔도카다이티스]",
+                mnemonic: "🏠안(endo-) + 🫀심장(cardi) + 🔥염증(-itis) = 심장 제일 안쪽의 염증!",
+                desc: "심장 안쪽 벽 및 판막에 생긴 세균성 염증."
+            },
+            "_r_cardi_s_logy": {
+                term: "cardiology", kor: "순환기내과 / 심장학", pronunciation: "[카디올로지]",
+                mnemonic: "🫀심장(cardi/o) + 📚학문(-logy) = 심장 전문 내과",
+                desc: "심장과 혈관 질환을 다루는 학문."
+            },
+            "_r_cardi_s_megaly": {
+                term: "cardiomegaly", kor: "심장비대증", pronunciation: "[카디오메갈리]",
+                mnemonic: "🫀심장(cardi/o) + 🎈비대(-megaly) = 심장이 메가급으로 커짐!",
+                desc: "심장이 비정상적으로 커진 상태."
+            },
+            "p_brady_r_cardi_s_none": {
+                term: "bradycardia", kor: "서맥 (느린 맥박)", pronunciation: "[브래디카디아]",
+                mnemonic: "🐢느림(brady-) + 🫀심장(cardi) = 느릿느릿 뛰는 심장!",
+                desc: "심장 박동수가 분당 60회 미만으로 느린 상태."
+            },
+            "p_tachy_r_cardi_s_none": {
+                term: "tachycardia", kor: "빈맥 (빠른 맥박)", pronunciation: "[태키카디아]",
+                mnemonic: "⚡빠름(tachy-) + 🫀심장(cardi) = 번개처럼 뛰는 심장!",
+                desc: "심장 박동수가 분당 100회 이상으로 빠른 상태."
+            },
+            "_r_hepat_s_itis": {
+                term: "hepatitis", kor: "간염", pronunciation: "[헤파타이티스]",
+                mnemonic: "🍺간(hepat/o) + 🔥염증(-itis) = 술 마신 간에 불났다!",
+                desc: "간 세포 및 조직에 발생한 염증."
+            },
+            "_r_nephr_s_ectomy": {
+                term: "nephrectomy", kor: "신장절제술", pronunciation: "[네프렉토미]",
+                mnemonic: "🫘콩팥(nephr/o) + ✂️절제(-ectomy) = 콩팥을 수술로 제거",
+                desc: "신장 하나 또는 일부를 수술로 적출함."
+            },
+            "_r_nephr_s_logy": {
+                term: "nephrology", kor: "신장내과", pronunciation: "[네프로롤로지]",
+                mnemonic: "🫘콩팥(nephr/o) + 📚학문(-logy) = 투석과 콩팥 전문 연구",
+                desc: "신장 기능과 투석 치료를 다루는 내과."
+            },
+            "_r_oste_s_itis": {
+                term: "osteitis", kor: "골염 (뼈 염증)", pronunciation: "[오스테아이티스]",
+                mnemonic: "🦴뼈(oste/o) + 🔥염증(-itis) = 뼈 속에 생긴 염증",
+                desc: "뼈 조직 감염으로 생긴 염증."
+            },
+            "_r_derm_s_itis": {
+                term: "dermatitis", kor: "피부염", pronunciation: "[더마타이티스]",
+                mnemonic: "🧴피부(dermat/o) + 🔥염증(-itis) = 피부 가려움 불났다!",
+                desc: "피부에 빨갛게 발적과 가려움이 나타나는 염증."
+            },
+            "_r_derm_s_logy": {
+                term: "dermatology", kor: "피부과", pronunciation: "[더마톨로지]",
+                mnemonic: "🧴피부(dermat/o) + 📚학문(-logy) = 예쁜 피부 다루는 학문",
+                desc: "피부, 모발 질환을 진료하는 의학 분야."
+            },
+            "_r_neur_s_algia": {
+                term: "neuralgia", kor: "신경통", pronunciation: "[뉴랄지아]",
+                mnemonic: "🧠신경(neur/o) + ⚡통증(-algia) = 찌릿찌릿 아픈 신경통!",
+                desc: "특정 신경을 따라 갑자기 찌르는 듯한 통증."
+            },
+            "_r_neur_s_logy": {
+                term: "neurology", kor: "신경과", pronunciation: "[뉴롤로지]",
+                mnemonic: "🧠신경(neur/o) + 📚학문(-logy) = 뇌와 신경 연구",
+                desc: "뇌, 척수, 말초신경 질환을 진료하는 과."
+            },
+            "_r_arthr_s_itis": {
+                term: "arthritis", kor: "관절염", pronunciation: "[아스라이티스]",
+                mnemonic: "🦴관절(arthr/o) + 🔥염증(-itis) = 관절 쑤시고 불난 상태",
+                desc: "관절 연골 손상이나 자극으로 붓는 염증."
+            },
+            "_r_arthr_s_scopy": {
+                term: "arthroscopy", kor: "관절경 검사", pronunciation: "[아스로스코피]",
+                mnemonic: "🦴관절(arthr/o) + 🔍내시경(-scopy) = 무릎 관절 속 들여다보기",
+                desc: "소형 관절경을 삽입하여 진단하는 기법."
+            }
+        };
+
+        // Ranks
+        const RANKS = [
+            { minXP: 0, title: "Lv.1 의대 새내기", badge: "🐣" },
+            { minXP: 300, title: "Lv.2 병원 인턴", badge: "🩺" },
+            { minXP: 700, title: "Lv.3 치프 레지던트", badge: "💉" },
+            { minXP: 1200, title: "Lv.4 베테랑 전문의", badge: "🏥" },
+            { minXP: 2000, title: "Lv.5 의학의 신(명의)", badge: "👑" }
+        ];
+
+        let state = {
+            mode: 'builder',
+            xp: 0,
+            levelTitle: "Lv.1 의대 새내기",
+            slots: { prefix: null, root: null, suffix: null },
+            quiz: { score: 0, streak: 0, currentQuestion: null, slots: { prefix: null, root: null, suffix: null } },
+            flashcards: { list: [], index: 0, flipped: false }
+        };
+
+        function addXP(amount) {
+            state.xp += amount;
+            document.getElementById('userXP').innerText = state.xp;
+            
+            // Check level up
+            let currentRank = RANKS[0];
+            for (let r of RANKS) {
+                if (state.xp >= r.minXP) currentRank = r;
+            }
+            if (state.levelTitle !== currentRank.title) {
+                state.levelTitle = currentRank.title;
+                document.getElementById('userLevelBadge').innerText = `${currentRank.badge} ${currentRank.title}`;
+                triggerConfetti();
+                playChime('levelUp');
+            }
+        }
+
+        function playChime(type) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start(); osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'invalid') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(200, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start(); osc.stop(ctx.currentTime + 0.2);
+                } else if (type === 'levelUp') {
+                    osc.frequency.setValueAtTime(440, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                    osc.start(); osc.stop(ctx.currentTime + 0.4);
+                } else if (type === 'click') {
+                    osc.frequency.setValueAtTime(500, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.03, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+                    osc.start(); osc.stop(ctx.currentTime + 0.05);
+                }
+            } catch (e) {}
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPalettes();
+            renderReferenceDictionary();
+            initFlashcards();
+            updateBuilderDisplay();
+        });
+
+        function switchMode(mode) {
+            state.mode = mode;
+            playChime('click');
+
+            const btnBuilder = document.getElementById('tabBuilder');
+            const btnQuiz = document.getElementById('tabQuiz');
+            const btnFC = document.getElementById('tabFlashcards');
+
+            const viewBuilder = document.getElementById('builderModeView');
+            const viewQuiz = document.getElementById('quizModeView');
+            const viewFC = document.getElementById('flashcardsModeView');
+
+            [btnBuilder, btnQuiz, btnFC].forEach(b => b.className = "px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 text-mint-100 hover:text-white");
+            [viewBuilder, viewQuiz, viewFC].forEach(v => { v.classList.add('hidden'); v.classList.remove('flex'); });
+
+            if (mode === 'builder') {
+                btnBuilder.className = "px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white text-mint-900 font-bold shadow-sm";
+                viewBuilder.classList.remove('hidden'); viewBuilder.classList.add('flex');
+            } else if (mode === 'quiz') {
+                btnQuiz.className = "px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white text-mint-900 font-bold shadow-sm";
+                viewQuiz.classList.remove('hidden'); viewQuiz.classList.add('flex');
+                if (!state.quiz.currentQuestion) generateNewQuizQuestion();
+            } else if (mode === 'flashcards') {
+                btnFC.className = "px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white text-mint-900 font-bold shadow-sm";
+                viewFC.classList.remove('hidden'); viewFC.classList.add('flex');
+                updateFlashcardUI();
+            }
+        }
+
+        function renderPalettes() {
+            document.getElementById('prefixPalette').innerHTML = PREFIXES.map(p => `
+                <div onclick="selectBlock('prefix', '${p.id}')"
+                     class="block-card bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-200 rounded-xl px-3 py-2 flex items-center gap-2 shadow-2xs">
+                    <span class="text-base">${p.emoji}</span>
+                    <div>
+                        <span class="font-en font-bold text-xs text-indigo-900 block">${p.text}</span>
+                        <span class="text-[10px] text-indigo-700/80">${p.meaning}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('rootPalette').innerHTML = ROOTS.map(r => `
+                <div onclick="selectBlock('root', '${r.id}')"
+                     class="block-card bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-200 rounded-xl px-3 py-2 flex items-center gap-2 shadow-2xs">
+                    <span class="text-base">${r.emoji}</span>
+                    <div>
+                        <span class="font-en font-bold text-xs text-emerald-950 block">${r.combiningForm}</span>
+                        <span class="text-[10px] text-emerald-800">${r.meaning}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('suffixPalette').innerHTML = SUFFIXES.map(s => `
+                <div onclick="selectBlock('suffix', '${s.id}')"
+                     class="block-card bg-amber-50/90 hover:bg-amber-100 border border-amber-200 rounded-xl px-3 py-2 flex items-center gap-2 shadow-2xs">
+                    <span class="text-base">${s.emoji}</span>
+                    <div>
+                        <span class="font-en font-bold text-xs text-amber-950 block">${s.text}</span>
+                        <span class="text-[10px] text-amber-800">${s.meaning}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectBlock(type, id) {
+            playChime('click');
+            if (state.mode === 'builder') {
+                if (type === 'prefix') state.slots.prefix = PREFIXES.find(p => p.id === id);
+                if (type === 'root') state.slots.root = ROOTS.find(r => r.id === id);
+                if (type === 'suffix') state.slots.suffix = SUFFIXES.find(s => s.id === id);
+                updateBuilderDisplay();
+            } else if (state.mode === 'quiz') {
+                if (type === 'prefix') state.quiz.slots.prefix = PREFIXES.find(p => p.id === id);
+                if (type === 'root') state.quiz.slots.root = ROOTS.find(r => r.id === id);
+                if (type === 'suffix') state.quiz.slots.suffix = SUFFIXES.find(s => s.id === id);
+                updateQuizSlotsDisplay();
+            }
+        }
+
+        function clearSlot(type) {
+            if (state.slots[type]) {
+                playChime('click');
+                state.slots[type] = null;
+                updateBuilderDisplay();
+            }
+        }
+
+        function resetSlots() {
+            playChime('click');
+            state.slots = { prefix: null, root: null, suffix: null };
+            updateBuilderDisplay();
+        }
+
+        function assembleTerm(prefixObj, rootObj, suffixObj) {
+            if (!rootObj) return null;
+            let prefixPart = (prefixObj && prefixObj.id !== 'p_none') ? prefixObj.text.replace('-', '') : '';
+            let rootPart = rootObj.rootWord;
+            let suffixPart = suffixObj ? suffixObj.text.replace('-', '') : '';
+
+            if (suffixObj) {
+                if (!suffixObj.startsWithVowel) {
+                    rootPart += rootObj.vowel;
+                }
+            } else {
+                rootPart += rootObj.vowel;
+            }
+
+            return prefixPart + rootPart + suffixPart;
+        }
+
+        function updateBuilderDisplay() {
+            const pSlot = document.getElementById('slot-prefix-content');
+            const rSlot = document.getElementById('slot-root-content');
+            const sSlot = document.getElementById('slot-suffix-content');
+            const formulaText = document.getElementById('formulaText');
+            const resultPanel = document.getElementById('resultPanel');
+
+            // Prefixes
+            if (state.slots.prefix) {
+                pSlot.innerHTML = `<div class="bg-indigo-600 text-white rounded-xl px-2.5 py-1.5 w-full font-bold text-xs flex items-center justify-between">
+                    <span>${state.slots.prefix.emoji} ${state.slots.prefix.text}</span>
+                    <i class="fa-solid fa-xmark text-xs opacity-80"></i>
+                </div>`;
+            } else pSlot.innerHTML = `<span class="text-xs text-slate-400 italic">(선택 안함)</span>`;
+
+            // Roots
+            if (state.slots.root) {
+                rSlot.innerHTML = `<div class="bg-emerald-600 text-white rounded-xl px-2.5 py-1.5 w-full font-bold text-xs flex items-center justify-between">
+                    <span>${state.slots.root.emoji} ${state.slots.root.combiningForm}</span>
+                    <i class="fa-solid fa-xmark text-xs opacity-80"></i>
+                </div>`;
+            } else rSlot.innerHTML = `<span class="text-xs text-slate-400 italic">어근 선택</span>`;
+
+            // Suffixes
+            if (state.slots.suffix) {
+                sSlot.innerHTML = `<div class="bg-amber-600 text-white rounded-xl px-2.5 py-1.5 w-full font-bold text-xs flex items-center justify-between">
+                    <span>${state.slots.suffix.emoji} ${state.slots.suffix.text}</span>
+                    <i class="fa-solid fa-xmark text-xs opacity-80"></i>
+                </div>`;
+            } else sSlot.innerHTML = `<span class="text-xs text-slate-400 italic">접미사 선택</span>`;
+
+            const pTxt = state.slots.prefix ? state.slots.prefix.text : '';
+            const rTxt = state.slots.root ? state.slots.root.combiningForm : '[어근]';
+            const sTxt = state.slots.suffix ? state.slots.suffix.text : '[접미사]';
+            formulaText.innerText = `${pTxt} ${pTxt ? '+' : ''} ${rTxt} + ${sTxt}`;
+
+            if (!state.slots.root || !state.slots.suffix) {
+                resultPanel.className = "rounded-2xl p-5 border bg-white border-slate-200";
+                resultPanel.innerHTML = `
+                    <div class="text-center py-6 text-slate-400">
+                        <p class="text-3xl mb-2">💡</p>
+                        <p class="text-sm font-bold text-slate-600">어근(Root)과 접미사(Suffix) 블록을 조합해 보세요!</p>
+                        <p class="text-xs text-slate-400 mt-1">최소한 어근 1개 + 접미사 1개가 합쳐져야 완벽한 완성이 됩니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const rawTerm = assembleTerm(state.slots.prefix, state.slots.root, state.slots.suffix);
+            const prefixKey = (state.slots.prefix && state.slots.prefix.id !== 'p_none') ? state.slots.prefix.id : '';
+            const dictKey = `${prefixKey}_${state.slots.root.id}_${state.slots.suffix.id}`;
+            const entry = MEDICAL_DICTIONARY[dictKey];
+
+            if (entry) {
+                playChime('success');
+                addXP(20);
+                triggerConfetti();
+
+                resultPanel.className = "rounded-2xl p-5 border-2 border-mint-500 bg-mint-50/60 shadow-md animate-success";
+                resultPanel.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-mint-200">
+                        <div>
+                            <span class="bg-mint-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                                <i class="fa-solid fa-sparkles"></i> 실제 자주 쓰는 의학용어 완료 (+20 XP)
+                            </span>
+                            <h3 class="text-3xl font-black font-en text-mint-950 mt-1 tracking-tight">
+                                ${entry.term}
+                            </h3>
+                            <p class="text-xs text-slate-500 font-bold font-en">${entry.pronunciation}</p>
+                        </div>
+                        <div class="text-left sm:text-right">
+                            <span class="text-xs text-slate-400 block">한국어 뜻</span>
+                            <span class="text-xl font-extrabold text-slate-800">${entry.kor}</span>
+                        </div>
+                    </div>
+
+                    <!-- Mnemonic Special Box -->
+                    <div class="mt-4 bg-amber-100/80 border border-amber-300 rounded-xl p-3.5 text-amber-950 text-xs font-bold flex items-start gap-2">
+                        <span class="text-lg">💡</span>
+                        <div>
+                            <span class="text-[10px] uppercase font-extrabold text-amber-800 block">쉽게 외우는 연상 비법:</span>
+                            <p class="text-sm mt-0.5">${entry.mnemonic}</p>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-600 mt-3 leading-relaxed">${entry.desc}</p>
+                `;
+            } else {
+                playChime('invalid');
+                resultPanel.className = "rounded-2xl p-5 border-2 border-amber-300 bg-amber-50/70";
+                resultPanel.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <span class="text-2xl">⚠️</span>
+                        <div>
+                            <span class="bg-amber-200 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-md">문법 가능 / 희귀 조합</span>
+                            <h3 class="text-base font-bold text-amber-900 mt-1">
+                                완성이 되었지만, 임상에서는 거의 쓰이지 않는 조합이에요!
+                            </h3>
+                            <p class="text-xs text-amber-800 mt-1">
+                                생성된 용어: <code class="bg-amber-100 px-1 py-0.5 rounded font-mono font-bold">${rawTerm}</code><br>
+                                실제 병원에서 많이 쓰이는 다른 어근이나 접미사로 교체해 보세요!
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Quiz Logic
+        function generateNewQuizQuestion() {
+            const keys = Object.keys(MEDICAL_DICTIONARY);
+            const randomKey = keys[Math.floor(Math.random() * keys.length)];
+            const targetData = MEDICAL_DICTIONARY[randomKey];
+
+            const parts = randomKey.split('_');
+            let pId = 'p_none', rId = '', sId = '';
+
+            if (parts.length === 6 && parts[0] === 'p') {
+                pId = 'p_' + parts[1];
+                rId = 'r_' + parts[3];
+                sId = 's_' + parts[5];
+            } else if (parts.length === 5) {
+                rId = 'r_' + parts[2];
+                sId = 's_' + parts[4];
+            }
+
+            state.quiz.currentQuestion = {
+                key: randomKey, targetData,
+                correctPrefixId: pId, correctRootId: rId, correctSuffixId: sId
+            };
+
+            state.quiz.slots = { prefix: null, root: null, suffix: null };
+
+            document.getElementById('targetMeaning').innerText = `"${targetData.kor}"`;
+            document.getElementById('targetMnemonicHint').innerText = `💡 힌트 연상: ${targetData.mnemonic}`;
+            document.getElementById('quizFeedback').className = "mt-4 hidden p-4 rounded-2xl border text-sm";
+            
+            updateQuizSlotsDisplay();
+            renderQuizBlockPool();
+        }
+
+        function updateQuizSlotsDisplay() {
+            document.getElementById('quiz-slot-prefix-content').innerText = state.quiz.slots.prefix ? `${state.quiz.slots.prefix.emoji} ${state.quiz.slots.prefix.text}` : '(선택 안함)';
+            document.getElementById('quiz-slot-root-content').innerText = state.quiz.slots.root ? `${state.quiz.slots.root.emoji} ${state.quiz.slots.root.combiningForm}` : '어근 선택';
+            document.getElementById('quiz-slot-suffix-content').innerText = state.quiz.slots.suffix ? `${state.quiz.slots.suffix.emoji} ${state.quiz.slots.suffix.text}` : '접미사 선택';
+        }
+
+        function clearQuizSlot(type) {
+            state.quiz.slots[type] = null;
+            updateQuizSlotsDisplay();
+        }
+
+        function renderQuizBlockPool() {
+            const pool = document.getElementById('quizBlockPool');
+            const q = state.quiz.currentQuestion;
+
+            let prefixOptions = [PREFIXES.find(p => p.id === q.correctPrefixId) || PREFIXES[0]];
+            let rootOptions = [ROOTS.find(r => r.id === q.correctRootId)];
+            let suffixOptions = [SUFFIXES.find(s => s.id === q.correctSuffixId)];
+
+            while(rootOptions.length < 3) {
+                let rnd = ROOTS[Math.floor(Math.random() * ROOTS.length)];
+                if (!rootOptions.includes(rnd)) rootOptions.push(rnd);
+            }
+            while(suffixOptions.length < 3) {
+                let rnd = SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)];
+                if (!suffixOptions.includes(rnd)) suffixOptions.push(rnd);
+            }
+
+            const allBlocks = [
+                ...prefixOptions.map(p => ({ ...p, type: 'prefix' })),
+                ...rootOptions.map(r => ({ ...r, type: 'root', text: r.combiningForm })),
+                ...suffixOptions.map(s => ({ ...s, type: 'suffix' }))
+            ].sort(() => Math.random() - 0.5);
+
+            pool.innerHTML = allBlocks.map(b => `
+                <button onclick="selectBlock('${b.type}', '${b.id}')" 
+                        class="px-3.5 py-2 bg-slate-100 hover:bg-mint-100 border border-slate-200 hover:border-mint-400 rounded-xl text-xs font-bold text-slate-800 flex items-center gap-1.5 transition active:scale-95 shadow-2xs">
+                    <span>${b.emoji}</span>
+                    <span>${b.text}</span>
+                    <span class="text-[10px] text-slate-400 font-normal">(${b.meaning})</span>
+                </button>
+            `).join('');
+        }
+
+        function submitQuizAnswer() {
+            const q = state.quiz.currentQuestion;
+            const userP = state.quiz.slots.prefix ? state.quiz.slots.prefix.id : 'p_none';
+            const userR = state.quiz.slots.root ? state.quiz.slots.root.id : '';
+            const userS = state.quiz.slots.suffix ? state.quiz.slots.suffix.id : '';
+
+            const feedback = document.getElementById('quizFeedback');
+            feedback.classList.remove('hidden');
+
+            if (userP === q.correctPrefixId && userR === q.correctRootId && userS === q.correctSuffixId) {
+                playChime('success');
+                triggerConfetti();
+                addXP(100);
+
+                state.quiz.score += 100;
+                state.quiz.streak += 1;
+                document.getElementById('quizScore').innerText = state.quiz.score;
+                document.getElementById('quizStreak').innerText = state.quiz.streak;
+
+                feedback.className = "mt-4 p-4 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-950 animate-success";
+                feedback.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 font-bold text-base">
+                            <span>🎉</span>
+                            <span>정답입니다! 완벽해요! (+100 XP)</span>
+                        </div>
+                        <button onclick="generateNewQuizQuestion()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl transition shadow-sm">
+                            다음 문제 ➔
+                        </button>
+                    </div>
+                    <p class="text-xs text-emerald-900 mt-2 font-semibold">
+                        <strong>${q.targetData.term} (${q.targetData.kor})</strong> - 연상 비법: ${q.targetData.mnemonic}
+                    </p>
+                `;
+            } else {
+                playChime('invalid');
+                state.quiz.streak = 0;
+                document.getElementById('quizStreak').innerText = "0";
+
+                feedback.className = "mt-4 p-4 rounded-2xl border border-rose-300 bg-rose-50 text-rose-950";
+                feedback.innerHTML = `
+                    <div class="flex items-center gap-2 font-bold text-base mb-1">
+                        <span>😅</span>
+                        <span>아쉽습니다! 어근이나 접미사를 다시 확인해 보세요!</span>
+                    </div>
+                    <p class="text-xs text-rose-800">
+                        힌트: ${q.targetData.mnemonic}
+                    </p>
+                `;
+            }
+        }
+
+        function skipQuizQuestion() {
+            playChime('click');
+            generateNewQuizQuestion();
+        }
+
+        // Flashcards System
+        function initFlashcards() {
+            state.flashcards.list = Object.values(MEDICAL_DICTIONARY).sort(() => Math.random() - 0.5);
+            state.flashcards.index = 0;
+            state.flashcards.flipped = false;
+        }
+
+        function updateFlashcardUI() {
+            const list = state.flashcards.list;
+            const idx = state.flashcards.index;
+            if (list.length === 0) return;
+
+            const item = list[idx];
+            document.getElementById('fcTerm').innerText = item.term;
+            document.getElementById('fcPron').innerText = item.pronunciation;
+            document.getElementById('fcKor').innerText = item.kor;
+            document.getElementById('fcMnemonic').innerText = `💡 ${item.mnemonic}`;
+            document.getElementById('fcDesc').innerText = item.desc;
+            document.getElementById('fcIndex').innerText = `${idx + 1} / ${list.length}`;
+
+            // Reset flip
+            state.flashcards.flipped = false;
+            document.getElementById('flashcardInner').classList.remove('rotate-y-180');
+        }
+
+        function flipFlashcard() {
+            playChime('click');
+            state.flashcards.flipped = !state.flashcards.flipped;
+            const inner = document.getElementById('flashcardInner');
+            if (state.flashcards.flipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function nextFlashcard() {
+            playChime('click');
+            state.flashcards.index = (state.flashcards.index + 1) % state.flashcards.list.length;
+            updateFlashcardUI();
+        }
+
+        function prevFlashcard() {
+            playChime('click');
+            state.flashcards.index = (state.flashcards.index - 1 + state.flashcards.list.length) % state.flashcards.list.length;
+            updateFlashcardUI();
+        }
+
+        function shuffleFlashcards() {
+            playChime('click');
+            initFlashcards();
+            updateFlashcardUI();
+        }
+
+        // Dictionary Reference Modal
+        function renderReferenceDictionary() {
+            const list = document.getElementById('dictList');
+            const entries = Object.values(MEDICAL_DICTIONARY);
+
+            list.innerHTML = entries.map(e => `
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-mint-400 transition flex justify-between items-center gap-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-en font-extrabold text-sm text-mint-900">${e.term}</span>
+                            <span class="text-xs text-slate-400 font-en font-semibold">${e.pronunciation}</span>
+                        </div>
+                        <p class="text-xs font-bold text-amber-700 mt-0.5">💡 ${e.mnemonic}</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">${e.desc}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-xs font-bold bg-mint-100 text-mint-900 px-2.5 py-1 rounded-lg">${e.kor}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterDictionary() {
+            const query = document.getElementById('dictSearchInput').value.toLowerCase().trim();
+            const list = document.getElementById('dictList');
+            const entries = Object.values(MEDICAL_DICTIONARY);
+
+            const filtered = entries.filter(e => 
+                e.term.toLowerCase().includes(query) || 
+                e.kor.includes(query) || 
+                e.mnemonic.includes(query) ||
+                e.desc.includes(query)
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">검색 결과가 없습니다.</div>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(e => `
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-mint-400 transition flex justify-between items-center gap-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-en font-extrabold text-sm text-mint-900">${e.term}</span>
+                            <span class="text-xs text-slate-400 font-en font-semibold">${e.pronunciation}</span>
+                        </div>
+                        <p class="text-xs font-bold text-amber-700 mt-0.5">💡 ${e.mnemonic}</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">${e.desc}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-xs font-bold bg-mint-100 text-mint-900 px-2.5 py-1 rounded-lg">${e.kor}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openReferenceModal() {
+            playChime('click');
+            document.getElementById('referenceModal').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeReferenceModal() {
+            playChime('click');
+            document.getElementById('referenceModal').classList.add('opacity-0', 'pointer-events-none');
+        }
+    </script>
+</body>
+</html>
